@@ -65,7 +65,7 @@ typedef union {
         unsigned int opcode : 6;
     } rtype;
     
-    /* access itype with: instruction.rtype.(oppcode|rs|rt|imm) */
+    /* access itype with: instruction.itype.(oppcode|rs|rt|imm) */
     struct {
         unsigned int imm : 16;
         unsigned int rt : 5;
@@ -73,7 +73,7 @@ typedef union {
         unsigned int opcode : 6;
     } itype;
     
-    /* access jtype with: instruction.rtype.(opcode|addr) */
+    /* access jtype with: instruction.jtype.(opcode|addr) */
     struct {
         unsigned int addr : 26;
         unsigned int opcode : 6;
