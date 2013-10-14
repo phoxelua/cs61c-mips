@@ -213,7 +213,7 @@ int check(Address address,Alignment alignment) {
     if (address < 1 || address >= MEMORY_SPACE){
     return 0;
     }
-    if (address + alignment >= MEMORY_SPACE){ \\not enough space
+    if (address + alignment >= MEMORY_SPACE){ //not enough space
     return 0;
     }
     if (alignment != LENGTH_BYTE && alignment != LENGTH_HALF_WORD && alignment != LENGTH_WORD){
