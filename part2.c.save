@@ -4,7 +4,7 @@
 #include "types.h"
 
 void execute_instruction(Instruction instruction,Processor* processor,Byte *memory) {
-    //Word temp;
+    Word temp;
     /* YOUR CODE HERE: COMPLETE THE SWITCH STATEMENTS */
     switch(instruction.opcode) {
         case 0x0: // opcode == 0x0(SPECIAL)
@@ -14,41 +14,21 @@ void execute_instruction(Instruction instruction,Processor* processor,Byte *memo
                     processor->PC += 4;
                     break;
                 case 0x02: // funct == 0x02 (SRL)
-			    if ((processor->R[instruction.rtype.rt] & 0x10000) != 0){ //< didn't work for some reason
-		              processor->R[instruction.rtype.rd] = processor->R[instruction.rtype.rt] * -1;
-			    }
-			    else{
-		               processor->R[instruction.rtype.rd] = processor->R[instruction.rtype.rt];
-			    }
-		      processor->R[instruction.rtype.rd] = processor->R[instruction.rtype.rd] >> instruction.rtype.shamt;
+                    processor->R[instruction.rtype.rd] = processor->R[instruction.rtype.rt] >> instruction.rtype.shamt;
                     processor->PC += 4;
                     break;
-                case 0x03: // funct == 0x03 (SRA)
-		      {
-		      //printf("%d\n", processor->R[instruction.rtype.rt]);
-		      int i;
-		      for (i=0;i<instruction.rtype.shamt;i++){
-			    if (i==0){
-		              processor->R[instruction.rtype.rd] = (sWord)(sHalf)processor->R[instruction.rtype.rt] >> 1;
-			    }
-			    else{
-		               processor->R[instruction.rtype.rd] = (sWord)(sHalf)processor->R[instruction.rtype.rd] >> 1;
-			    }
-		      }
+			                case 0x03: // funct == 0x03 (SRA)
+                    processor->R[instruction.rtype.rd] = (Word)processor->R[instruction.rtype.rt] >> processor->R[instruction.rtype.rt];
                     processor->PC += 4;
                     break;
-		      }
                 case 0x08: // funct == 0x08 (JR)
                     processor->PC = processor->R[instruction.rtype.rs];
                     break;                    
                 case 0x09: // funct == 0x09 (JALR)
-		      {
-		      Word temp;
                     temp  = processor->PC + 4;
                     processor->PC = processor->R[instruction.rtype.rs];
                     processor->R[instruction.rtype.rd] = temp;
                     break;
- 		      }
                 case 0xc: // funct == 0xc (SYSCALL)
                     execute_syscall(processor);
                     processor->PC += 4;
@@ -62,26 +42,19 @@ void execute_instruction(Instruction instruction,Processor* processor,Byte *memo
                     processor->PC += 4;
                     break;
                 case 0x18: // funct == 0x18 (MULT)
-		      {
-		      sDouble temp;
-                    temp = ((sWord) processor->R[instruction.rtype.rs]) * (sWord) processor->R[instruction.rtype.rt];
-                    processor->RLO = (sWord)temp;
-                    processor->RHI = (sWord)(temp >> 32);
-		      printf("%d\n",processor->RLO);
-		      printf("%d\n",processor->RHI);
+                    temp = (sDouble) processor->R[instruction.rtype.rs] * (sDouble) processor->R[instruction.rtype.rt];
+                    processor->RLO = temp << 5;
+                    processor->RHI = temp >> 5;
                     processor->PC += 4;
                     break;
-		      }
                 case 0x19: // funct == 0x19 (MULTU)
-		      {
-		      Double temp;
                     temp = (Double) processor->R[instruction.rtype.rs] * (Double) processor->R[instruction.rtype.rt];
-                    processor->RLO = (Word)temp;
-                    processor->RHI = (Word)(temp >> 32);
+                    processor->RLO = temp << 5;
+                    processor->RHI = temp >> 5;
                     processor->PC += 4;
                     break;
-		      }
                 case 0x21: // funct == 0x21 (ADDU)
+           		// printf("HERE IN ADDU");
                     processor->R[instruction.rtype.rd] = processor->R[instruction.rtype.rs] + processor->R[instruction.rtype.rt];
                     processor->PC += 4;
                     break;
@@ -102,7 +75,7 @@ void execute_instruction(Instruction instruction,Processor* processor,Byte *memo
                     processor->PC += 4;
                     break;
                 case 0x27: // funct == 0x27 (NOR)
-                    processor->R[instruction.rtype.rd] = ~(processor->R[instruction.rtype.rs] & processor->R[instruction.rtype.rt]);
+                    processor->R[instruction.rtype.rd] = !(processor->R[instruction.rtype.rs] & processor->R[instruction.rtype.rt]);
                     processor->PC += 4;
                     break;
                 case 0x2a: // funct == 0x2a (SLT)
@@ -128,28 +101,30 @@ void execute_instruction(Instruction instruction,Processor* processor,Byte *memo
             break;
         case 0x04: // opcode == 0x04 (BEQ)
             if (processor->R[instruction.itype.rs] == processor->R[instruction.itype.rt]){
-                processor->PC += 4 + (sWord)(sHalf)instruction.itype.imm*4;
-		  break;
+                processor->PC += 4 + (instruction.itype.imm *4);
             }
             processor->PC += 4; 
             break;
         case 0x05: // opcode == 0x05 (BNE)
             if (processor->R[instruction.itype.rs] != processor->R[instruction.itype.rt]){
-                processor->PC += 4 + (sWord)(sHalf)instruction.itype.imm*4;
-		  break;
+                processor->PC += 4 + (instruction.itype.imm << 2);
             }
             processor->PC += 4;
+        printf("HERE BNE DONE");
+        //printf("%d", processor->R[2]);
+        //printf("%d", processor->R[3]);
             break;
         case 0x09: // opcode == 0x09 (ADDIU)
+         //printf("HERE IN ADDIUUUU");
             processor->R[instruction.itype.rt] = processor->R[instruction.itype.rs] + (sWord)(sHalf)instruction.itype.imm;
             processor->PC += 4; 
             break;
         case 0x0a: // opcode == 0x0a (SLTI)
-            processor->R[instruction.itype.rt] = (sWord)processor->R[instruction.itype.rs] < (sWord)(sHalf)instruction.itype.imm;
+            processor->R[instruction.itype.rt] = processor->R[instruction.itype.rs] < (Word)instruction.itype.imm;
             processor->PC += 4; 
             break;
         case 0x0b: // opcode == 0x0b (SLTIU)
-            processor->R[instruction.itype.rt] = (sWord) processor->R[instruction.itype.rs] < instruction.itype.imm; ///////DIFFF
+            processor->R[instruction.itype.rt] = (sWord) processor->R[instruction.itype.rs] < (Word)instruction.itype.imm; ///////DIFFF
             processor->PC += 4; 
             break;
         case 0x0c: // opcode == 0x0c (ANDI)
@@ -157,14 +132,17 @@ void execute_instruction(Instruction instruction,Processor* processor,Byte *memo
             processor->PC += 4; 
             break;
         case 0xd: // opcode == 0xd (ORI)
+    	     //printf("HERE IN ORI");
             processor->R[instruction.itype.rt] = processor->R[instruction.itype.rs] | instruction.itype.imm;
             processor->PC += 4;
             break;
         case 0x0e: // opcode == 0x0e (XORI)
+        //printf("HERE IN XORI");
             processor->R[instruction.itype.rt] = processor->R[instruction.itype.rs] ^  instruction.itype.imm;
             processor->PC += 4;
             break;
         case 0x0f: // opcode == 0x0f (LUI)  
+            //printf("Here in LUI");
             processor->R[instruction.itype.rt] = instruction.itype.imm << 16;
             processor->PC += 4;
             break;
@@ -174,6 +152,7 @@ void execute_instruction(Instruction instruction,Processor* processor,Byte *memo
             processor->PC += 4;
             break;
         case 0x21: // opcode == 0x21 (LH)
+		//printf("HERE LH");
             processor->R[instruction.itype.rt] = (Word) load(memory, processor->R[instruction.itype.rs] + (sWord)(sHalf)instruction.itype.imm, LENGTH_HALF_WORD);
             processor->PC += 4;
             break;
@@ -190,15 +169,15 @@ void execute_instruction(Instruction instruction,Processor* processor,Byte *memo
             processor->PC += 4;
             break;
         case 0x28: // opcode == 0x28 (SB)
-            store(memory, processor->R[instruction.itype.rs] + (sWord)instruction.itype.imm,  LENGTH_BYTE, processor->R[instruction.itype.rt]);
+            store(memory, processor->R[instruction.itype.rs] + (Word)instruction.itype.imm,  LENGTH_BYTE, processor->R[instruction.itype.rt]);
             processor->PC += 4;
             break;
         case 0x29: // opcode == 0x029 (SH)
-            store(memory, processor->R[instruction.itype.rs] + (sWord)instruction.itype.imm,  LENGTH_HALF_WORD, processor->R[instruction.itype.rt]);
+            store(memory, processor->R[instruction.itype.rs] + (Word)instruction.itype.imm,  LENGTH_HALF_WORD, processor->R[instruction.itype.rt]);
             processor->PC += 4;
             break;
         case 0x2b: // opcode == 0x2b (SW)
-            store(memory, processor->R[instruction.itype.rs] + (sWord)instruction.itype.imm,  LENGTH_WORD, processor->R[instruction.itype.rt]);
+            store(memory, processor->R[instruction.itype.rs] + (Word)instruction.itype.imm,  LENGTH_WORD, processor->R[instruction.itype.rt]);
             processor->PC += 4;
             break;
         default: // undefined opcode
@@ -211,9 +190,6 @@ void execute_instruction(Instruction instruction,Processor* processor,Byte *memo
 
 int check(Address address,Alignment alignment) {
     if (address < 1 || address >= MEMORY_SPACE){
-    return 0;
-    }
-    if (address + alignment >= MEMORY_SPACE){ \\not enough space
     return 0;
     }
     if (alignment != LENGTH_BYTE && alignment != LENGTH_HALF_WORD && alignment != LENGTH_WORD){
